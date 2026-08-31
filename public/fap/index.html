@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FAP Rewards</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./style.css?v=55" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+  <!-- Monetag rewarded / interstitial SDK (zone id supplied by backend /me). -->
+  <script src='//libtl.com/sdk.js' data-zone='11686396' data-sdk='show_11686396'></script>
+  <script>
+    // Adsgram rewarded ad block id, supplied by the backend (/me).
+    window.__ADSGRAM_BLOCK_ID__ = null;
+    // Monetag zone id, supplied by the backend (/me). Defaults to the configured zone.
+    window.__MONETAG_ZONE__ = '11686396';
+  </script>
+</head>
+<body>
+  <main class="app">
+    <!-- Header -->
+    <header class="topbar">
+      <div class="brand-mark clay-float">
+        <svg class="clay-icon" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <linearGradient id="hd-b" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--mint)" />
+              <stop offset="100%" stop-color="var(--sky)" />
+            </linearGradient>
+            <linearGradient id="hd-c" x1="0" y1="0" x2="0.6" y2="1">
+              <stop offset="0%" stop-color="oklch(1 0 0 / 0.85)" />
+              <stop offset="100%" stop-color="oklch(1 0 0 / 0)" />
+            </linearGradient>
+          </defs>
+          <rect x="4" y="4" width="56" height="56" rx="20" fill="url(#hd-b)" />
+          <rect x="4" y="4" width="56" height="30" rx="18" fill="url(#hd-c)" opacity="0.5" />
+          <path d="M32 14c1.8 8.6 7.6 14.4 16 16-8.4 1.6-14.2 7.4-16 16-1.8-8.6-7.6-14.4-16-16 8.4-1.6 14.2-7.4 16-16Z" fill="oklch(1 0 0)" />
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1 class="display">FAP <span class="grad-text">Rewards</span></h1>
+        <p class="tag">Scratch. Refer. Earn.</p>
+      </div>
+      <div class="balance-chip mint">₹<span id="balanceChip">0.00</span></div>
+      <a id="adminBtn" class="admin-dash-btn" href="/fap/admin" hidden>Admin</a>
+    </header>
+
+    <!-- HOME -->
+    <section class="page active" id="page-home">
+      <div class="balance-card clay">
+        <svg class="coin-float" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <linearGradient id="coin-a" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--sky)" />
+              <stop offset="100%" stop-color="var(--primary)" />
+            </linearGradient>
+          </defs>
+          <ellipse cx="32" cy="42" rx="24" ry="16" fill="var(--sun)" opacity="0.55" />
+          <circle cx="32" cy="30" r="22" fill="url(#coin-a)" />
+          <circle cx="32" cy="30" r="16" fill="oklch(1 0 0 / 0.28)" />
+          <path d="M26 20h13m-13 6h13m-13 0c8 0 8 9 0 9h3l9 9M26 35h6" stroke="oklch(1 0 0)" stroke-width="3" stroke-linecap="round" fill="none" />
+        </svg>
+        <p class="label">Available balance</p>
+        <p class="value grad-text">₹<span id="balance">0.00</span></p>
+        <p class="sub" id="scratchedSub">0 card(s) scratched</p>
+      </div>
+
+      <div class="scratch-hint clay">
+        <div class="card3d clay-float">
+          <svg class="clay-icon" viewBox="0 0 64 64" aria-hidden="true">
+            <defs>
+              <linearGradient id="cd-a" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="var(--sky)" />
+                <stop offset="100%" stop-color="var(--primary)" />
+              </linearGradient>
+              <linearGradient id="cd-c" x1="0" y1="0" x2="0.6" y2="1">
+                <stop offset="0%" stop-color="oklch(1 0 0 / 0.85)" />
+                <stop offset="100%" stop-color="oklch(1 0 0 / 0)" />
+              </linearGradient>
+            </defs>
+            <rect x="6" y="16" width="52" height="34" rx="12" fill="url(#cd-a)" />
+            <rect x="6" y="16" width="52" height="16" rx="10" fill="url(#cd-c)" opacity="0.55" />
+            <rect x="12" y="38" width="20" height="6" rx="3" fill="oklch(1 0 0 / 0.75)" />
+            <circle cx="46" cy="41" r="5" fill="oklch(1 0 0 / 0.9)" />
+            <path d="M24 8c1 5 4.4 8.4 9.4 9.4C28.4 18.4 25 21.8 24 26.8 23 21.8 19.6 18.4 14.6 17.4 19.6 16.4 23 13 24 8Z" fill="var(--sun)" />
+          </svg>
+        </div>
+        <h2 class="display">Scratch cards</h2>
+        <p class="sub" id="cardsRemaining">0 of 0 cards remaining to scratch</p>
+        <p class="sub">Drag across a card to scratch it by hand.</p>
+        <button id="scratchBtn" class="clay-btn primary">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 12l-6.1 3.2L12 21l-1.9-5.8L4 12l6.1-3.2z" /></svg>
+          Get a card
+        </button>
+      </div>
+
+      <h2 class="section-title"><span class="tic mint"></span>Earned cards</h2>
+      <div class="cards-grid" id="cardsGrid"></div>
+    </section>
+
+    <!-- REFER -->
+    <section class="page" id="page-refer">
+      <div class="refer-hero clay">
+        <svg class="gift-float" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <linearGradient id="gf-a" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--primary)" />
+              <stop offset="100%" stop-color="var(--sky)" />
+            </linearGradient>
+            <linearGradient id="gf-b" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--mint)" />
+              <stop offset="100%" stop-color="var(--sky)" />
+            </linearGradient>
+            <linearGradient id="gf-c" x1="0" y1="0" x2="0.6" y2="1">
+              <stop offset="0%" stop-color="oklch(1 0 0 / 0.85)" />
+              <stop offset="100%" stop-color="oklch(1 0 0 / 0)" />
+            </linearGradient>
+          </defs>
+          <rect x="8" y="24" width="48" height="32" rx="12" fill="url(#gf-b)" />
+          <rect x="6" y="16" width="52" height="14" rx="7" fill="url(#gf-a)" />
+          <rect x="6" y="16" width="52" height="7" rx="4" fill="url(#gf-c)" opacity="0.6" />
+          <rect x="28" y="16" width="8" height="40" rx="4" fill="oklch(1 0 0 / 0.85)" />
+          <circle cx="24" cy="12" r="7" fill="var(--candy)" />
+          <circle cx="40" cy="12" r="7" fill="var(--sun)" />
+        </svg>
+        <h2 class="display">Refer &amp; Earn</h2>
+        <p>Invite friends. When they join and qualify, you win a free scratch card worth up to ₹98.70.</p>
+        <div class="link-box">
+          <input id="refLink" readonly spellcheck="false" />
+          <button id="copyBtn" class="clay-sm press copy-btn" aria-label="Copy referral link"></button>
+        </div>
+        <p class="refer-note">👆 Send them this link — they open the Mini App, join all channels, and you get credited automatically.</p>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card clay-sm">
+          <span class="stat-label">Earnings today</span>
+          <span class="stat-value" id="earnToday">₹0.00</span>
+        </div>
+        <div class="stat-card clay-sm">
+          <span class="stat-label">Earnings yesterday</span>
+          <span class="stat-value" id="earnYesterday">₹0.00</span>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card clay-sm">
+          <span class="stat-label">Referrals</span>
+          <span class="stat-value" id="refCount">0</span>
+        </div>
+        <div class="stat-card clay-sm">
+          <span class="stat-label">Qualified</span>
+          <span class="stat-value" id="qualCount">0</span>
+        </div>
+      </div>
+
+      <div class="howto clay">
+        <h2 class="display">How it works</h2>
+        <ol id="howtoList">
+          <li>Share your personal link with friends.</li>
+          <li>They tap the link — the Mini App opens with your referral attached.</li>
+          <li>They join every channel (Telegram, YouTube, WhatsApp) inside the app.</li>
+          <li>Once they qualify on a new device, you instantly get a free scratch card.</li>
+          <li>Scratch cards pay up to ₹98.70, redeemable anytime.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- WALLET -->
+    <section class="page" id="page-wallet">
+      <div class="balance-card clay">
+        <p class="label">Wallet balance</p>
+        <p class="value grad-text">₹<span id="walletBalance">0.00</span></p>
+        <p class="sub">Withdraw to your UPI anytime</p>
+      </div>
+
+      <div class="redeem-card clay">
+        <div class="wallet-head">
+          <svg class="clay-icon wal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4z" /></svg>
+          <h2 class="display">Withdraw</h2>
+        </div>
+
+        <p class="payout-label">Choose a payout</p>
+        <div class="payout-grid">
+          <button class="payout-opt" data-payout="flipkart">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><path d="M3 6h18" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
+            <span>Flipkart</span>
+          </button>
+          <button class="payout-opt" data-payout="amazon">
+            <span class="payout-logo"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Amazon_logo.svg" alt="Amazon" loading="lazy" /></span>
+            <span>Amazon</span>
+          </button>
+          <button class="payout-opt" data-payout="play">
+            <span class="payout-logo"><img src="https://commons.wikimedia.org/wiki/Special:FilePath/Google_Play_2022_logo.svg" alt="Google Play" loading="lazy" /></span>
+            <span>Play Store</span>
+          </button>
+          <button class="payout-opt" data-payout="upi">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M3 10h18" /><path d="M7 15h4" /></svg>
+            <span>UPI</span>
+          </button>
+        </div>
+
+        <form id="redeemForm" class="redeem-form">
+          <input id="amountInput" type="text" inputmode="decimal" placeholder="Amount (min ₹25)" class="clay-inset" />
+          <input id="upiInput" type="text" placeholder="UPI ID (e.g. name@upi)" autocomplete="off" class="clay-inset" hidden />
+          <input id="nameInput" type="text" placeholder="Full name" autocomplete="name" class="clay-inset" />
+          <input id="phoneInput" type="tel" placeholder="Phone number" autocomplete="tel" class="clay-inset" />
+          <input id="emailInput" type="email" placeholder="Email" autocomplete="email" class="clay-inset" />
+          <input id="countryInput" type="text" placeholder="Country" autocomplete="country-name" class="clay-inset" />
+          <p class="withdraw-fee" id="feeNote" hidden></p>
+          <button id="redeemBtn" type="submit" class="clay-btn mint">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5" /><path d="M5 12l7-7 7 7" /></svg>
+            Redeem
+          </button>
+          <p class="redeem-msg" id="redeemMsg"></p>
+        </form>
+      </div>
+
+      <h2 class="section-title"><span class="tic mint"></span>Transactions</h2>
+      <div class="txn-list" id="txnList"></div>
+    </section>
+
+    <!-- ADMIN (admin-only, auto-detected via /me) -->
+    <section class="page" id="page-admin">
+      <div class="surface clay admin-head">
+        <svg class="clay-icon wal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z" /><path d="m9 12 2 2 4-4" /></svg>
+        <h2 class="display">Admin</h2>
+      </div>
+      <div class="stats-row" id="adminStats"></div>
+      <h2 class="section-title"><span class="tic mint"></span>Withdrawal requests</h2>
+      <div class="txn-list" id="adminWithdrawals"></div>
+      <h2 class="section-title"><span class="tic mint"></span>Users</h2>
+      <div id="adminUsers"></div>
+    </section>
+
+    <!-- Tab bar -->
+    <nav class="tabbar">
+      <button class="tab clay-btn active" data-page="home">
+        <svg class="clay-icon" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <linearGradient id="hm-a" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--sky)" />
+              <stop offset="100%" stop-color="var(--primary)" />
+            </linearGradient>
+            <linearGradient id="hm-c" x1="0" y1="0" x2="0.6" y2="1">
+              <stop offset="0%" stop-color="oklch(1 0 0 / 0.85)" />
+              <stop offset="100%" stop-color="oklch(1 0 0 / 0)" />
+            </linearGradient>
+          </defs>
+          <path d="M32 8 6 28v24a6 6 0 0 0 6 6h40a6 6 0 0 0 6-6V28L32 8Z" fill="url(#hm-a)" />
+          <path d="M32 8 6 28h52L32 8Z" fill="url(#hm-c)" opacity="0.6" />
+          <rect x="24" y="36" width="16" height="22" rx="5" fill="oklch(1 0 0 / 0.92)" />
+        </svg>
+        <span>Home</span>
+      </button>
+      <button class="tab clay-btn" data-page="refer">
+        <svg class="clay-icon" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <linearGradient id="us-a" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--sky)" />
+              <stop offset="100%" stop-color="var(--primary)" />
+            </linearGradient>
+            <linearGradient id="us-b" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--mint)" />
+              <stop offset="100%" stop-color="var(--sky)" />
+            </linearGradient>
+            <linearGradient id="us-c" x1="0" y1="0" x2="0.6" y2="1">
+              <stop offset="0%" stop-color="oklch(1 0 0 / 0.85)" />
+              <stop offset="100%" stop-color="oklch(1 0 0 / 0)" />
+            </linearGradient>
+          </defs>
+          <circle cx="42" cy="24" r="10" fill="url(#us-b)" />
+          <path d="M24 52c0-9 8-15 18-15s18 6 18 15Z" fill="url(#us-b)" />
+          <circle cx="22" cy="26" r="11" fill="url(#us-a)" />
+          <circle cx="22" cy="21" r="7" fill="url(#us-c)" opacity="0.55" />
+          <path d="M2 54c0-10 9-17 20-17s20 7 20 17Z" fill="url(#us-a)" />
+        </svg>
+        <span>Refer</span>
+      </button>
+      <button class="tab clay-btn" data-page="wallet">
+        <svg class="clay-icon" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <linearGradient id="wl2-a" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--sky)" />
+              <stop offset="100%" stop-color="var(--primary)" />
+            </linearGradient>
+            <linearGradient id="wl2-c" x1="0" y1="0" x2="0.6" y2="1">
+              <stop offset="0%" stop-color="oklch(1 0 0 / 0.85)" />
+              <stop offset="100%" stop-color="oklch(1 0 0 / 0)" />
+            </linearGradient>
+          </defs>
+          <rect x="7" y="14" width="50" height="38" rx="13" fill="url(#wl2-a)" />
+          <rect x="7" y="14" width="50" height="17" rx="12" fill="url(#wl2-c)" opacity="0.5" />
+          <path d="M40 28h18v10H40a5 5 0 0 1 0-10Z" fill="oklch(1 0 0 / 0.92)" />
+          <circle cx="46" cy="33" r="3" fill="var(--primary)" />
+        </svg>
+        <span>Wallet</span>
+      </button>
+      <button class="tab clay-btn admin-tab" data-page="admin" hidden>
+        <svg class="clay-icon" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <linearGradient id="ad-a" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="var(--primary)" />
+              <stop offset="100%" stop-color="var(--sky)" />
+            </linearGradient>
+            <linearGradient id="ad-c" x1="0" y1="0" x2="0.6" y2="1">
+              <stop offset="0%" stop-color="oklch(1 0 0 / 0.85)" />
+              <stop offset="100%" stop-color="oklch(1 0 0 / 0)" />
+            </linearGradient>
+          </defs>
+          <rect x="14" y="14" width="34" height="26" rx="7" fill="url(#ad-a)" />
+          <path d="M24 30a8 8 0 1 1 16 0v2m-16-2v10a6 6 0 0 0 6 6h4a6 6 0 0 0 6-6V30" fill="none" stroke="url(#ad-c)" stroke-width="4" stroke-linecap="round" />
+          <circle cx="32" cy="40" r="3" fill="oklch(1 0 0 / 0.95)" />
+        </svg>
+        <span>Admin</span>
+      </button>
+    </nav>
+  </main>
+
+  <!-- Channel join lock popup — fixed full-screen cover ABOVE everything
+       (header, pages, tab bar). Shown until the user joins every channel. -->
+  <div id="lockCover" class="lock-cover" hidden>
+    <div class="lock-card clay">
+      <svg class="lock-ico clay-float" viewBox="0 0 64 64" aria-hidden="true">
+        <defs>
+          <linearGradient id="lk-a" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="var(--primary)" />
+            <stop offset="100%" stop-color="var(--sky)" />
+          </linearGradient>
+        </defs>
+        <rect x="12" y="26" width="40" height="26" rx="8" fill="url(#lk-a)" />
+        <path d="M22 26v-8a10 10 0 0 1 20 0v8" fill="none" stroke="var(--candy)" stroke-width="5" stroke-linecap="round" />
+        <circle cx="32" cy="39" r="4" fill="oklch(1 0 0 / 0.95)" />
+      </svg>
+      <h2 class="display">Join our channels</h2>
+      <p id="lockMissing" class="sub">Join all channels below to unlock the app.</p>
+      <div id="lockChannels" class="ext-links"></div>
+      <button id="lockVerify" class="clay-btn primary">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+        I've joined — Verify
+      </button>
+    </div>
+  </div>
+
+  <!-- First-use external channel join (YouTube / WhatsApp) -->
+  <div id="extModal" class="modal" hidden>
+    <div class="modal-card clay">
+      <h2 class="display">Join our channels</h2>
+      <p>Join both channels below, then tap <b>I've joined</b> to unlock.</p>
+      <div id="extLinks" class="ext-links"></div>
+      <button id="extDone" class="clay-btn mint">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+        I've joined
+      </button>
+    </div>
+  </div>
+
+  <!-- Scratch confirmation + rewarded ad modal -->
+  <div id="scratchModal" class="modal" hidden>
+    <div class="modal-card clay">
+      <svg class="modal-star clay-float" viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M32 8c2 9.4 7.8 15.2 17 17-9.2 1.8-15 7.6-17 17-2-9.4-7.8-15.2-17-17 9.2-1.8 15-7.6 17-17Z" fill="var(--candy)" />
+        <path d="M50 26c1.2 5.6 4.6 9 10 10-5.4 1-8.8 4.4-10 10-1.2-5.6-4.6-9-10-10 5.4-1 8.8-4.4 10-10Z" fill="var(--sun)" />
+      </svg>
+      <h2 class="display">Congratulations!</h2>
+      <p>You're about to scratch a card.<br />Do you want to scratch it now?</p>
+      <button id="modalYes" class="clay-btn primary">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 12l-6.1 3.2L12 21l-1.9-5.8L4 12l6.1-3.2z" /></svg>
+        Yes, Scratch
+      </button>
+      <button id="modalNo" class="clay-btn">Not now</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- Loading overlay: shown on every open until the account is resolved -->
+  <div id="loading" class="loading">
+    <div class="loading-card clay">
+      <div class="loading-spinner"><i></i><i></i><i></i></div>
+      <p>Loading your account…</p>
+    </div>
+  </div>
+
+  <!-- Daily check-in screen: blocks the whole app until the user checks in
+       today. No balance, no nav — check-in first, then use the app. -->
+  <div id="checkin" class="checkin" hidden>
+    <div class="checkin-card clay">
+      <svg class="checkin-ico clay-float" viewBox="0 0 64 64" aria-hidden="true">
+        <defs>
+          <linearGradient id="ck-a" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="var(--candy)" />
+            <stop offset="100%" stop-color="var(--sun)" />
+          </linearGradient>
+        </defs>
+        <rect x="14" y="10" width="36" height="34" rx="8" fill="url(#ck-a)" />
+        <rect x="18" y="18" width="28" height="3" rx="1.5" fill="oklch(1 0 0 / 0.6)" />
+        <path d="M40 32l-9 9-5-5" fill="none" stroke="oklch(1 0 0 / 0.95)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <h2 class="display">Daily check-in</h2>
+      <p>Check in today to unlock the app and start scratching.</p>
+      <button id="checkinBtn" class="clay-btn primary">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+        Check in now
+      </button>
+    </div>
+  </div>
+
+  <!-- Banned screen: ONLY this is shown to blocked/fake accounts. No balance,
+       no data, no nav — nothing else is reachable. -->
+  <div id="banned" class="banned" hidden>
+    <div class="banned-card clay">
+      <svg class="banned-ico clay-float" viewBox="0 0 64 64" aria-hidden="true">
+        <defs>
+          <linearGradient id="bn-a" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="var(--candy)" />
+            <stop offset="100%" stop-color="var(--muted)" />
+          </linearGradient>
+        </defs>
+        <circle cx="32" cy="32" r="26" fill="url(#bn-a)" opacity="0.25" />
+        <path d="M32 16v20" stroke="var(--candy)" stroke-width="6" stroke-linecap="round" />
+        <circle cx="32" cy="46" r="4" fill="var(--candy)" />
+      </svg>
+      <h2 class="display">You're banned</h2>
+    </div>
+  </div>
+
+  <script src="./app.js?v=55"></script>
+</body>
+</html>

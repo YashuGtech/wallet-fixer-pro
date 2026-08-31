@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FAP Admin</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="./admin.css?v=3" />
+</head>
+<body>
+  <div class="wrap">
+    <!-- Login -->
+    <section id="login" class="panel">
+      <h1>FAP Admin</h1>
+      <p class="sub">Enter the admin key to manage withdrawal requests.</p>
+      <input id="keyInput" type="password" placeholder="Admin key" autocomplete="off" />
+      <button id="loginBtn" class="btn primary">Unlock</button>
+      <p id="loginMsg" class="msg"></p>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="dash" class="panel" hidden>
+      <header class="dash-head">
+        <h1>Admin</h1>
+        <div class="tabs">
+          <button id="tabWithdrawals" class="btn tabbtn active">Withdrawals</button>
+          <button id="tabUsers" class="btn tabbtn">Users</button>
+        </div>
+        <button id="refreshBtn" class="btn">Refresh</button>
+        <button id="logoutBtn" class="btn ghost">Logout</button>
+      </header>
+      <div class="stats" id="stats"></div>
+      <div id="list" class="list"></div>
+    </section>
+    <footer class="made-by">Made by <strong>Lovable</strong></footer>
+  </div>
+
+
+  <script src="./admin.js?v=2"></script>
+</body>
+</html>

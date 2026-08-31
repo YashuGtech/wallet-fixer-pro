@@ -1,0 +1,921 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --radius: 1.75rem;
+  --background: oklch(0.968 0.018 305);
+  --foreground: oklch(0.28 0.06 295);
+  --card: oklch(0.995 0.005 300);
+  --card-foreground: oklch(0.28 0.06 295);
+  --popover: oklch(0.995 0.005 300);
+  --primary: oklch(0.66 0.19 300);
+  --primary-foreground: oklch(0.99 0.005 300);
+  --secondary: oklch(0.93 0.035 300);
+  --secondary-foreground: oklch(0.34 0.08 295);
+  --muted: oklch(0.945 0.02 300);
+  --muted-foreground: oklch(0.53 0.05 295);
+  --accent: oklch(0.74 0.15 175);
+  --accent-foreground: oklch(0.22 0.05 180);
+  --destructive: oklch(0.62 0.22 25);
+  --destructive-foreground: oklch(0.99 0.005 300);
+  --border: oklch(0.9 0.03 300);
+  --input: oklch(0.95 0.02 300);
+  --ring: oklch(0.66 0.19 300);
+  --mint: oklch(0.72 0.15 168);
+  --sky: oklch(0.72 0.13 245);
+  --sun: oklch(0.84 0.16 85);
+  --candy: oklch(0.78 0.15 5);
+
+  --gradient-app: radial-gradient(
+      120% 90% at 10% 0%,
+      color-mix(in oklab, var(--primary) 22%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(100% 80% at 95% 10%, color-mix(in oklab, var(--mint) 24%, transparent), transparent 60%),
+    radial-gradient(110% 90% at 50% 100%, color-mix(in oklab, var(--sky) 18%, transparent), transparent 65%),
+    linear-gradient(180deg, oklch(0.985 0.012 305), oklch(0.955 0.025 260));
+  --gradient-primary: linear-gradient(135deg, var(--primary), color-mix(in oklab, var(--sky) 70%, var(--primary)));
+  --gradient-mint: linear-gradient(135deg, var(--mint), color-mix(in oklab, var(--sky) 55%, var(--mint)));
+  --gradient-candy: linear-gradient(135deg, var(--candy), var(--sun));
+  --clay-shadow: 10px 14px 30px -10px color-mix(in oklab, var(--primary) 32%, transparent),
+    -8px -8px 22px -6px oklch(1 0 0 / 0.9), inset 3px 4px 10px oklch(1 0 0 / 0.75),
+    inset -6px -8px 16px color-mix(in oklab, var(--primary) 14%, transparent);
+  --clay-shadow-sm: 6px 8px 18px -8px color-mix(in oklab, var(--primary) 30%, transparent),
+    inset 2px 3px 7px oklch(1 0 0 / 0.8), inset -4px -5px 10px color-mix(in oklab, var(--primary) 12%, transparent);
+  --clay-press: inset 6px 8px 16px color-mix(in oklab, var(--primary) 22%, transparent),
+    inset -4px -6px 14px oklch(1 0 0 / 0.85);
+  --ease-clay: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  background: var(--gradient-app);
+  background-attachment: fixed;
+  color: var(--foreground);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3, h4, .display, .label, .value, .stat-value { font-family: "Outfit", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.02em; }
+
+.app {
+  max-width: 28rem;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px 110px;
+}
+
+/* Only the active page shows. */
+.page { display: none; }
+.page.active { display: block; animation: rise 0.55s var(--ease-clay) both; }
+
+/* ---- Clay surfaces & utilities ---- */
+.clay {
+  background: color-mix(in oklab, var(--card) 88%, var(--primary) 3%);
+  border-radius: var(--radius);
+  box-shadow: var(--clay-shadow);
+  margin-bottom: 16px;
+}
+.clay-sm {
+  background: color-mix(in oklab, var(--card) 90%, var(--primary) 3%);
+  border-radius: calc(var(--radius) - 0.5rem);
+  box-shadow: var(--clay-shadow-sm);
+}
+.clay-inset {
+  background: color-mix(in oklab, var(--muted) 85%, transparent);
+  border-radius: calc(var(--radius) - 0.75rem);
+  box-shadow: var(--clay-press);
+}
+.press {
+  transition: transform 0.22s var(--ease-clay), box-shadow 0.22s ease;
+  cursor: pointer;
+}
+.press:active {
+  transform: scale(0.96) translateY(2px);
+  box-shadow: var(--clay-press);
+}
+.grad-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---- Top bar ---- */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.brand-mark {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  padding: 10px;
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--card) 90%, var(--primary) 3%);
+  box-shadow: var(--clay-shadow-sm);
+  flex: none;
+  animation: float 5s ease-in-out infinite;
+}
+.brand-mark .clay-icon { width: 100%; height: 100%; }
+.brand-text { flex: 1; }
+.brand-text h1 { font-size: 24px; font-weight: 800; line-height: 1.2; }
+.brand-text .tag { color: var(--muted-foreground); font-size: 14px; }
+
+.balance-chip {
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--card) 90%, var(--primary) 3%);
+  box-shadow: var(--clay-shadow-sm);
+  font-family: "Outfit", sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.balance-chip.mint { color: var(--mint); }
+.admin-dash-btn {
+  font-family: "Outfit", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--primary-foreground);
+  background-image: var(--gradient-primary);
+  box-shadow: var(--clay-shadow-sm);
+  white-space: nowrap;
+}
+.admin-dash-btn[hidden] { display: none; }
+
+/* ---- Balance card ---- */
+.balance-card {
+  position: relative;
+  overflow: hidden;
+  padding: 28px 24px;
+  text-align: center;
+}
+.balance-card .label {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted-foreground);
+}
+.balance-card .value {
+  font-size: 48px;
+  font-weight: 800;
+  margin: 8px 0 8px;
+}
+.balance-card .sub { color: var(--muted-foreground); font-size: 14px; }
+.coin-float {
+  position: absolute;
+  right: -24px;
+  top: -24px;
+  width: 112px;
+  height: 112px;
+  opacity: 0.7;
+  animation: float 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ---- Scratch hint ---- */
+.scratch-hint { text-align: center; padding: 24px; }
+.card3d {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 12px;
+  animation: float 5s ease-in-out infinite;
+}
+.card3d .clay-icon { width: 100%; height: 100%; }
+.scratch-hint h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.scratch-hint .sub { color: var(--muted-foreground); font-size: 14px; margin-bottom: 16px; }
+.scratch-hint .sub strong { color: var(--foreground); }
+
+.clay-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 999px;
+  font-family: "Outfit", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: transform 0.22s var(--ease-clay), box-shadow 0.22s ease, filter 0.15s;
+}
+.clay-btn:active { transform: scale(0.96) translateY(2px); box-shadow: var(--clay-press); }
+.clay-btn .btn-icon { width: 18px; height: 18px; flex: none; }
+.clay-btn.primary {
+  background-image: var(--gradient-primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 12px 26px -10px color-mix(in oklab, var(--primary) 70%, transparent);
+}
+.clay-btn.mint {
+  background-image: var(--gradient-mint);
+  color: #fff;
+  box-shadow: 0 12px 26px -10px color-mix(in oklab, var(--mint) 75%, transparent);
+}
+
+
+/* ---- Section title ---- */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 20px 0 12px;
+}
+.section-title .tic {
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+}
+.section-title .tic.mint { background: var(--gradient-mint); }
+
+/* ---- Earned cards grid ---- */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+.card-tile {
+  position: relative;
+  aspect-ratio: 1;
+  width: 100%;
+  border-radius: 24px;
+  background: var(--gradient-mint);
+  box-shadow: var(--clay-shadow-sm);
+  overflow: hidden;
+}
+.card-tile .prize {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+  padding: 8px;
+}
+.card-tile .prize .youwon {
+  font-family: "Outfit", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.85);
+}
+.card-tile .prize .amount {
+  font-family: "Outfit", sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.card-tile .prize .locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+}
+.card-tile .prize .locked svg { width: 30px; height: 30px; }
+.card-tile .prize .locked .locked-txt {
+  font-family: "Outfit", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.card-tile canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+.card-tile canvas.revealed { pointer-events: none; }
+.card-tile.empty {
+  background: var(--gradient-mint);
+  opacity: 0.35;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card-tile.empty .tile-icon {
+  width: 30px;
+  height: 30px;
+  fill: oklch(1 0 0 / 0.9);
+}
+
+/* ---- Refer ---- */
+.refer-hero { position: relative; overflow: hidden; padding: 24px; }
+.refer-hero h2 { font-size: 24px; font-weight: 800; }
+.refer-hero p { max-width: 85%; margin-top: 8px; color: var(--muted-foreground); font-size: 14px; line-height: 1.6; }
+.gift-float {
+  position: absolute;
+  right: -16px;
+  top: -12px;
+  width: 96px;
+  height: 96px;
+  opacity: 0.8;
+  animation: float 5s ease-in-out infinite;
+  pointer-events: none;
+}
+.refer-note { margin-top: 12px; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+.refer-note .mono, .howto .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; color: var(--mint); word-break: break-all; }
+.link-box { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+.link-box input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px;
+  border: none;
+  outline: none;
+  background: color-mix(in oklab, var(--muted) 85%, transparent);
+  border-radius: calc(var(--radius) - 0.75rem);
+  box-shadow: var(--clay-press);
+  color: var(--mint);
+  font-size: 14px;
+  font-weight: 600;
+}
+.copy-btn {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  color: var(--primary);
+  font-size: 18px;
+}
+.copy-btn .icon { width: 20px; height: 20px; }
+
+.stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.stat-card { display: flex; flex-direction: column; gap: 4px; padding: 16px; }
+.stat-label { color: var(--muted-foreground); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; }
+.stat-value { font-size: 24px; font-weight: 800; }
+
+.howto { padding: 24px; }
+.howto h2 { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+.howto ol { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.howto li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  counter-increment: step;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.howto ol { counter-reset: step; }
+.howto li::before {
+  content: counter(step);
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--gradient-mint);
+  color: #fff;
+  font-family: "Outfit", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+}
+.howto li span { padding-top: 6px; }
+
+/* ---- Wallet ---- */
+.redeem-card { padding: 24px; }
+.wallet-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.wallet-head .clay-icon.wal { width: 26px; height: 26px; color: var(--primary); }
+.wallet-head h2 { font-size: 20px; font-weight: 700; }
+
+/* Payout method selector (Flipkart / Amazon / Play Store) */
+.payout-label {
+  font-family: "Outfit", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted-foreground);
+  margin-bottom: 10px;
+}
+.payout-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.payout-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 6px;
+  border: none;
+  background: color-mix(in oklab, var(--card) 90%, var(--primary) 3%);
+  box-shadow: var(--clay-shadow-sm);
+  border-radius: 16px;
+  cursor: pointer;
+  font-family: "Outfit", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  transition: transform 0.22s var(--ease-clay), box-shadow 0.22s ease, color 0.2s;
+}
+.payout-opt svg { width: 26px; height: 26px; }
+.payout-opt .payout-logo {
+  width: 100%;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+.payout-opt .payout-logo img {
+  max-width: 90%;
+  max-height: 26px;
+  object-fit: contain;
+}
+.payout-opt:active { transform: scale(0.96); box-shadow: var(--clay-press); }
+.payout-opt.selected {
+  color: var(--primary);
+  transform: scale(1.02);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent), var(--clay-shadow-sm);
+}
+
+/* Contact form shown after picking a payout */
+.redeem-form { display: none; }
+.redeem-form.open { display: block; animation: rise 0.45s var(--ease-clay) both; }
+.redeem-form input.clay-inset {
+  width: 100%;
+  border: none;
+  outline: none;
+  padding: 16px 20px;
+  font-size: 16px;
+  color: var(--foreground);
+  font-family: inherit;
+  margin-bottom: 12px;
+}
+.redeem-form input.clay-inset::placeholder { color: var(--muted-foreground); }
+.redeem-form input.clay-inset:focus { box-shadow: var(--clay-press), 0 0 0 3px color-mix(in oklab, var(--ring) 40%, transparent); }
+.redeem-msg { min-height: 20px; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--muted-foreground); text-align: center; }
+.withdraw-fee { font-size: 12px; font-weight: 600; color: var(--candy, #f87171); text-align: center; margin: 2px 0 10px; }
+
+/* ---- Transactions ---- */
+.txn-list { display: flex; flex-direction: column; gap: 12px; }
+.txn-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: color-mix(in oklab, var(--card) 90%, var(--primary) 3%);
+  border-radius: calc(var(--radius) - 0.5rem);
+  box-shadow: var(--clay-shadow-sm);
+}
+.txn-icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: color-mix(in oklab, var(--muted) 85%, transparent);
+  box-shadow: var(--clay-press);
+  color: var(--primary);
+}
+.txn-icon .txn-arrow { width: 20px; height: 20px; }
+.txn-icon.credit .txn-arrow { color: var(--mint); }
+.txn-icon.debit .txn-arrow { color: var(--primary); }
+.txn-body { flex: 1; min-width: 0; }
+.txn-label { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ---- Paid / pending / rejected withdrawal styling ---- */
+.txn-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 800; letter-spacing: .02em;
+  background: color-mix(in oklab, var(--muted) 80%, transparent);
+  color: var(--muted-foreground);
+}
+.txn-badge.paid {
+  background: color-mix(in oklab, var(--mint, #34d399) 22%, transparent);
+  color: color-mix(in oklab, var(--mint, #34d399) 75%, #06301f);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--mint, #34d399) 40%, transparent);
+}
+.txn-badge.no {
+  background: color-mix(in oklab, var(--candy, #f87171) 20%, transparent);
+  color: color-mix(in oklab, var(--candy, #f87171) 80%, #3b0d0d);
+}
+.txn-tick { width: 14px; height: 14px; }
+.txn-icon .txn-tick { width: 22px; height: 22px; }
+.txn-item.paid {
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--mint, #34d399) 14%, var(--card)),
+    color-mix(in oklab, var(--card) 96%, var(--mint, #34d399)));
+  box-shadow: var(--clay-shadow-sm), 0 0 0 1px color-mix(in oklab, var(--mint, #34d399) 35%, transparent);
+}
+.txn-icon.paid {
+  background: color-mix(in oklab, var(--mint, #34d399) 25%, transparent);
+  color: color-mix(in oklab, var(--mint, #34d399) 80%, #06301f);
+}
+.txn-amount.paid { color: color-mix(in oklab, var(--mint, #34d399) 80%, #06301f); }
+.txn-time { color: var(--muted-foreground); font-size: 12px; margin-top: 2px; }
+.txn-amount { font-family: "Outfit", sans-serif; font-weight: 800; font-size: 15px; white-space: nowrap; }
+.txn-amount .sign { font-weight: 600; }
+.txn-amount.credit { color: var(--mint); }
+.txn-amount.debit { color: var(--primary); }
+.txn-empty { text-align: center; color: var(--muted-foreground); font-size: 14px; padding: 20px 0; }
+
+/* ---- Tab bar ---- */
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 28rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  gap: 4px;
+  z-index: 50;
+}
+.tabbar .clay {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 12px 8px;
+  width: 100%;
+  margin: 0;
+  backdrop-filter: blur(24px);
+}
+.tab {
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 16px;
+  padding: 8px 0;
+  width: auto;
+  color: var(--foreground);
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+.tab .clay-icon { width: 32px; height: 32px; transition: transform 0.3s ease; }
+.tab span {
+  font-family: "Outfit", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+.tab.active {
+  opacity: 1;
+  transform: scale(1.05);
+}
+.tab.active .clay-icon { transform: translateY(-2px); }
+.tab.active span { color: var(--primary); }
+
+/* ---- Channel join lock screen ---- */
+
+.lock-card { text-align: center; padding: 32px 24px; }
+.lock-card .lock-ico { width: 88px; height: 88px; margin: 0 auto 14px; }
+.lock-card h2 { font-size: 24px; font-weight: 800; }
+.lock-card .sub { color: var(--muted-foreground); font-size: 14px; line-height: 1.6; margin: 12px 0 20px; white-space: pre-line; }
+
+/* ---- First-use external join modal ---- */
+.ext-links { display: flex; flex-direction: column; gap: 10px; margin: 16px 0 20px; }
+.ext-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--clay-shadow-sm);
+  font-family: "Outfit", sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--foreground);
+  cursor: pointer;
+  text-align: left;
+}
+.ext-link-btn svg { width: 22px; height: 22px; flex: none; }
+
+/* ---- Loading overlay (shown on open until account resolves) ---- */
+.loading {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, oklch(0.22 0.05 295) 92%, transparent);
+  backdrop-filter: blur(6px);
+  transition: opacity 0.35s ease;
+}
+.loading.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+.loading-card { padding: 32px; text-align: center; }
+.loading-spinner {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.loading-spinner i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--sky));
+  animation: loadBounce 1s ease-in-out infinite;
+}
+.loading-spinner i:nth-child(2) { animation-delay: 0.15s; }
+.loading-spinner i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes loadBounce {
+  0%, 100% { transform: translateY(0); opacity: 0.6; }
+  50% { transform: translateY(-8px); opacity: 1; }
+}
+
+/* ---- Daily check-in screen (blocks app until check-in today) ----
+ * Full-screen cover above content (z 280 > loading 200, < banned 300). */
+.checkin {
+  position: fixed;
+  inset: 0;
+  z-index: 280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, oklch(0.18 0.04 300) 95%, transparent);
+  backdrop-filter: blur(5px);
+}
+.checkin[hidden] { display: none; }
+.checkin-card { padding: 44px 52px; text-align: center; max-width: 20rem; width: 100%; }
+.checkin-ico { width: 76px; height: 76px; margin: 0 auto 18px; display: block; }
+.checkin-card .display { font-size: 24px; font-weight: 800; }
+.checkin-card p { color: var(--muted-foreground); font-size: 14px; margin: 10px 0 20px; line-height: 1.6; }
+
+/* ---- Channel join lock popup ----
+ * Fixed full-screen cover ABOVE everything: header, pages, tab bar, ad modals
+ * (z 320 > banned 300). Shows nothing but the join message + buttons — no
+ * balance, no tabs, no data reachable until the user passes verification. */
+.lock-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 320;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in oklab, oklch(0.16 0.04 300) 96%, transparent);
+  backdrop-filter: blur(6px);
+}
+.lock-cover[hidden] { display: none; }
+.lock-cover .lock-card {
+  max-width: 22rem;
+  width: 100%;
+  text-align: center;
+  animation: rise 0.45s var(--ease-clay) both;
+}
+.lock-cover .lock-card .lock-ico { margin: 0 auto 14px; }
+.lock-cover .lock-card h2 { font-size: 24px; font-weight: 800; }
+.lock-cover .lock-card .sub {
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 12px 0 20px;
+  white-space: pre-line;
+}
+.lock-cover .lock-card .ext-links { margin-bottom: 16px; }
+
+/* ---- Banned screen (fake/blocked accounts only) ----
+ * Fixed full-screen cover above everything (z 300 > loading 200). Shows
+ * nothing but the ban message — no balance, no tabs, no data reachable. */
+.banned {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, oklch(0.16 0.04 300) 97%, transparent);
+}
+.banned[hidden] { display: none; }
+.banned-card {
+  padding: 48px 56px;
+  text-align: center;
+  color: oklch(1 0 0 / 0.9);
+}
+.banned-ico {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 20px;
+  display: block;
+  filter: drop-shadow(0 10px 20px oklch(0.5 0.16 20 / 0.4));
+}
+.banned-card .display { font-size: 26px; font-weight: 800; color: oklch(1 0 0 / 0.95); }
+
+/* ---- Scratch confirmation modal ---- */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in oklab, oklch(0.22 0.05 295) 55%, transparent);
+  backdrop-filter: blur(4px);
+  animation: fade 0.25s ease both;
+}
+.modal[hidden] { display: none; }
+.modal-card {
+  width: 100%;
+  max-width: 20rem;
+  padding: 28px 24px;
+  text-align: center;
+  margin: 0;
+  animation: rise 0.4s var(--ease-clay) both;
+}
+.modal-card .modal-star {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 10px;
+}
+.modal-card h2 { font-size: 24px; font-weight: 800; }
+.modal-card p { color: var(--muted-foreground); font-size: 14px; line-height: 1.6; margin: 12px 0 20px; }
+.modal-card .clay-btn { margin-bottom: 10px; }
+.modal-card .clay-btn:last-child {
+  background: color-mix(in oklab, var(--muted) 85%, transparent);
+  color: var(--muted-foreground);
+  box-shadow: var(--clay-shadow-sm);
+}
+
+/* ---- Admin (mini-app panel) ---- */
+.surface { background: color-mix(in oklab, var(--card) 90%, var(--primary) 3%); border-radius: var(--radius); box-shadow: var(--clay-shadow-sm); margin-bottom: 16px; }
+.admin-head { display: flex; align-items: center; gap: 12px; padding: 20px 24px; }
+.admin-head .clay-icon.wal { width: 28px; height: 28px; color: var(--primary); }
+.admin-head h2 { font-size: 20px; font-weight: 700; }
+.admin-header-row { display: flex; align-items: center; gap: 10px; padding: 16px 20px; }
+.admin-header-row h3 { flex: 1; font-size: 16px; font-weight: 700; }
+.admin-tab { display: flex; }
+.admin-tab[hidden] { display: none; }
+
+.adm-grp { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-foreground); margin: 16px 4px 8px; }
+.adm-req { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; margin-bottom: 12px; background: color-mix(in oklab, var(--card) 92%, var(--primary) 2%); border-radius: 16px; box-shadow: var(--clay-shadow-sm); }
+.adm-req-top { display: flex; align-items: center; justify-content: space-between; }
+.adm-req-top strong { font-size: 18px; font-weight: 800; }
+.adm-req-meta { color: var(--muted-foreground); font-size: 13px; }
+.adm-req-contact { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 13px; color: var(--muted-foreground); }
+.adm-note { font-size: 13px; font-weight: 700; color: var(--candy); }
+.adm-badge { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 9px; border-radius: 999px; background: color-mix(in oklab, var(--muted) 90%, transparent); }
+.adm-badge.ok { background: color-mix(in oklab, var(--mint) 28%, transparent); color: color-mix(in oklab, var(--mint) 60%, #000); }
+.adm-badge.no { background: color-mix(in oklab, var(--candy) 18%, transparent); color: var(--candy); }
+.adm-acts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.adm-btn { padding: 9px 14px; border: none; border-radius: 999px; font-family: "Outfit", sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
+.adm-btn.ok { background-image: var(--gradient-mint); color: #fff; }
+.adm-btn.no { background: color-mix(in oklab, var(--candy) 16%, transparent); color: var(--candy); }
+.adm-reason { flex: 1; min-width: 120px; padding: 9px 12px; border: none; border-radius: 12px; background: var(--muted); font-size: 13px; font-family: inherit; color: var(--foreground); outline: none; }
+.adm-balance { width: 100px; padding: 9px 12px; border: none; border-radius: 12px; background: var(--muted); font-size: 13px; font-family: inherit; color: var(--foreground); outline: none; }
+
+/* ---- Toast ---- */
+.toast {
+  position: fixed;
+  bottom: 112px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--card) 90%, var(--primary) 3%);
+  box-shadow: var(--clay-shadow-sm);
+  font-family: "Outfit", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--foreground);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 99;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---- Inline SVG icons (dynamic content) ---- */
+.icon { width: 20px; height: 20px; }
+
+/* ---- Animations ---- */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-10px) rotate(2deg); }
+}
+@keyframes pop {
+  0% { transform: scale(0.86); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes rise {
+  0% { transform: translateY(18px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}.clay-float { animation: float 5s ease-in-out infinite; }
+
+/* ===================================================================== *
+ * Desktop / wider viewport support (Telegram Desktop web-App column &
+ * browsers). Keeps the mobile look but stops it being a cramped thin
+ * sliver, adds a multi-column card grid, and hover states for mice so
+ * the scratch UI works naturally on desktop.
+ * ===================================================================== */
+@media (min-width: 56.25rem) {
+  /* Center a wider app column with breathing room instead of the 28rem sliver. */
+  .app { max-width: 64rem; padding: 28px 28px 120px; }
+
+  /* Multi-column grids so cards don't stretch huge on wide screens. */
+  .cards-grid { grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .howto ol { columns: 2; column-gap: 28px; }
+  .stats-row { grid-template-columns: repeat(4, 1fr); }
+
+  /* Tab bar spans the wider column. */
+  .tabbar { max-width: 64rem; }
+
+  /* Scratch hint + body text scale up a touch for readability. */
+  .scratch-hint h2 { font-size: 24px; }
+  .balance-card .value { font-size: 56px; }
+  .brand-text h1 { font-size: 30px; }
+}
+
+/* Mouse/desktop affordances — hover feedback + larger click targets. */
+@media (hover: hover) and (pointer: fine) {
+  .clay-btn:hover { filter: brightness(1.04); box-shadow: 0 16px 32px -12px color-mix(in oklab, var(--primary) 80%, transparent); }
+  .press:hover, .clay-sm:hover { transform: translateY(-2px); }
+  .tab:hover { opacity: 0.85; }
+  .tab:hover .clay-icon { transform: translateY(-2px); }
+  .card-tile:hover { box-shadow: 0 16px 32px -12px color-mix(in oklab, var(--primary) 55%, transparent); }
+  .adm-btn:hover { filter: brightness(1.06); }
+  .copy-btn:hover { box-shadow: var(--clay-press); }
+  .ext-link-btn:hover, .scratch:hover { cursor: pointer; }
+}
+
+/* Withdrawal fee note inline in the transaction row */
+.txn-fee {
+  margin-left: 8px;
+  white-space: nowrap;
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: color-mix(in oklab, var(--muted) 80%, transparent);
+  color: var(--muted-foreground);
+}
+
+/* Paid withdrawals get a soft mint glow + a pop-in tick */
+.txn-item.paid .txn-icon.paid { animation: txn-pop .45s cubic-bezier(.2,.9,.3,1.4) both; }
+.txn-item.paid .txn-badge.paid .txn-tick { animation: txn-draw .5s ease-out both; }
+@keyframes txn-pop {
+  0% { transform: scale(.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes txn-draw {
+  0% { transform: scale(.2) rotate(-25deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .txn-item.paid .txn-icon.paid,
+  .txn-item.paid .txn-badge.paid .txn-tick { animation: none; }
+}
+
+/* 60-minute ad-free access countdown badge */
+.access-badge {
+  margin-top: 14px;
+  display: inline-block;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: oklch(0.95 0.05 150 / 0.9);
+  color: oklch(0.35 0.12 150);
+}

@@ -18,6 +18,22 @@ let txns = [];
 
 const $ = (sel) => document.querySelector(sel);
 
+// ---- 60-minute ad-free access window ---------------------------------------
+// One ad on check-in unlocks the app for 60 minutes: no more ads and no extra
+// confirmation prompts while scratching inside that window.
+function accessMsLeft() {
+  return Math.max(0, (me?.accessUntil || 0) - Date.now());
+}
+function hasAccess() {
+  return accessMsLeft() > 0;
+}
+function fmtLeft(ms) {
+  const total = Math.ceil(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return m + 'm ' + String(s).padStart(2, '0') + 's';
+}
+
 function toast(msg) {
   const t = $('#toast');
   t.textContent = msg;
@@ -148,6 +164,13 @@ let pendingStart = null; // { tileCard, revealNow }
 let modalBusy = false;
 
 function askScratchConfirmation(tileCard, actions) {
+  // Inside the 60-minute window the card scratches straight away — no ad,
+  // no confirmation question.
+  if (hasAccess()) {
+    tileCard.unlocked = true;
+    if (typeof actions.revealNow === 'function') actions.revealNow();
+    return;
+  }
   if (modalBusy) return;
   modalBusy = true;
   pendingStart = { tileCard, revealNow: actions.revealNow };
@@ -909,15 +932,17 @@ $('#checkinBtn')?.addEventListener('click', async () => {
       }
     }
     btn.textContent = 'Checking in…';
-    await api(API_BASE + '/check-in', { method: 'POST', body: {} });
+    const ci = await api(API_BASE + '/check-in', { method: 'POST', body: {} });
     me.checkedInToday = true;
+    me.accessUntil = ci?.accessUntil || Date.now() + 60 * 60 * 1000;
+    startAccessTimer();
     const ck = $('#checkin');
     if (ck) ck.hidden = true;
     // Restore the tab bar + show Home.
     document.querySelector('nav').style.display = '';
     document.getElementById('page-home')?.classList.add('active');
     document.querySelector('.tab[data-page="home"]')?.classList.add('active');
-    toast('Checked in — welcome back!');
+    toast('Unlocked for 60 minutes — ad-free!');
     // Data doesn't always repopulate right after check-in — auto refresh the
     // mini app so everything (balance, cards, referrals) loads freshly.
     btn.textContent = 'Refreshing…';
@@ -994,7 +1019,8 @@ async function refreshAll() {
   if (!me.joinedAll || !me.joinedExternals) return;
   // Daily check-in gate: block the whole app until checked in today.
   updateCheckInUI();
-  if (!me.checkedInToday) return;
+  startAccessTimer();
+  if (!hasAccess()) return;
   showExtGate();
   await loadTransactions();
   renderHome();
@@ -1014,14 +1040,37 @@ async function loadTransactions() {
 function updateCheckInUI() {
   const ck = $('#checkin');
   if (!ck) return;
-  // MODIFIED: Always show check-in every time app opens (not just once per day)
-  const needs = true;
+  // Hourly check-in: the cover only shows when the 60-minute window is over.
+  const needs = !hasAccess();
   ck.hidden = !needs;
   if (needs) {
     // Hide all pages + tab bar so nothing is reachable before checking in.
     document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
     document.querySelector('nav').style.display = 'none';
   }
+}
+
+// Live countdown for the 60-minute free window. When it runs out, the
+// check-in cover comes back so the user watches one ad to unlock another hour.
+let _accessTimer = null;
+function startAccessTimer() {
+  if (_accessTimer) clearInterval(_accessTimer);
+  const tick = () => {
+    const badge = document.querySelector('#accessBadge');
+    const left = accessMsLeft();
+    if (badge) {
+      badge.hidden = left <= 0;
+      badge.textContent = 'Ad-free access: ' + fmtLeft(left);
+    }
+    if (left <= 0) {
+      clearInterval(_accessTimer);
+      _accessTimer = null;
+      if (me) me.checkedInToday = false;
+      updateCheckInUI();
+    }
+  };
+  tick();
+  _accessTimer = setInterval(tick, 1000);
 }
 
 // ---- Claim a ?ref=CODE from the URL on first load ---------------------------

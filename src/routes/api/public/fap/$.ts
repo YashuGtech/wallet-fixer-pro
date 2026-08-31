@@ -88,9 +88,16 @@ function randomReward() {
   return Math.round((min + Math.random() * (max - min)) * 100) / 100;
 }
 
+// Hourly check-in: watching one ad unlocks the whole app (and ad-free
+// scratching) for the next 60 minutes. After that the user checks in again.
+const ACCESS_WINDOW_MS = 60 * 60 * 1000;
+
+function accessUntil(t: number | null) {
+  return t ? Number(t) + ACCESS_WINDOW_MS : 0;
+}
+
 function checkedInToday(t: number | null) {
-  if (!t) return false;
-  return Number(t) >= new Date().setHours(0, 0, 0, 0);
+  return accessUntil(t) > Date.now();
 }
 
 async function adminAuthed(request: Request, url: URL) {
@@ -208,6 +215,9 @@ async function handle(request: Request, params: any): Promise<Response> {
         adsgramBlockId: cfg.adsgramBlockId,
         monetagZone: cfg.monetagZone,
         checkedInToday: checkedInToday(rec.lastCheckIn),
+        hasAccess: checkedInToday(rec.lastCheckIn),
+        accessUntil: accessUntil(rec.lastCheckIn),
+        accessWindowMs: ACCESS_WINDOW_MS,
         checkInCount: rec.checkInCount,
         isAdmin,
       });
@@ -219,9 +229,24 @@ async function handle(request: Request, params: any): Promise<Response> {
       if (!user) return json({ error: 'unauthorized' }, 401);
       const rec = await accountFor(request);
       if (!rec) return json({ error: 'ip_used' }, 403);
-      if (checkedInToday(rec.lastCheckIn)) return json({ ok: true, alreadyChecked: true, checkedInToday: true });
-      await updateUser(rec.id, { lastCheckIn: Date.now(), checkInCount: rec.checkInCount + 1 });
-      return json({ ok: true, checkedInToday: true, checkInCount: rec.checkInCount + 1 });
+      if (checkedInToday(rec.lastCheckIn))
+        return json({
+          ok: true,
+          alreadyChecked: true,
+          checkedInToday: true,
+          hasAccess: true,
+          accessUntil: accessUntil(rec.lastCheckIn),
+        });
+      const now = Date.now();
+      await updateUser(rec.id, { lastCheckIn: now, checkInCount: rec.checkInCount + 1 });
+      return json({
+        ok: true,
+        checkedInToday: true,
+        hasAccess: true,
+        accessUntil: accessUntil(now),
+        accessWindowMs: ACCESS_WINDOW_MS,
+        checkInCount: rec.checkInCount + 1,
+      });
     }
 
     // ---- POST /join-external ----------------------------------------------

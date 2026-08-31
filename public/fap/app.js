@@ -899,7 +899,7 @@ $('#lockVerify')?.addEventListener('click', async () => {
     if (me.joinedAll && me.joinedExternals) {
       toast('All channels verified!');
       updateCheckInUI();
-      if (!me.checkedInToday) return;
+      if (!hasAccess()) return;
       showExtGate();
       await loadTransactions();
       renderHome(); renderRefer(); renderWallet();

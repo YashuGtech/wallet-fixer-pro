@@ -907,3 +907,15 @@ h1, h2, h3, h4, .display, .label, .value, .stat-value { font-family: "Outfit", u
   .txn-item.paid .txn-icon.paid,
   .txn-item.paid .txn-badge.paid .txn-tick { animation: none; }
 }
+
+/* 60-minute ad-free access countdown badge */
+.access-badge {
+  margin-top: 14px;
+  display: inline-block;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: oklch(0.95 0.05 150 / 0.9);
+  color: oklch(0.35 0.12 150);
+}

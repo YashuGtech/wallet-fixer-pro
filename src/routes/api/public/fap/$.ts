@@ -296,12 +296,10 @@ async function handle(request: Request, params: any): Promise<Response> {
       const rec = await accountFor(request);
       if (!rec) return json({ error: 'ip_used' }, 403);
 
-      const missing: string[] = [];
-      for (const ch of cfg.channels) {
-        if (!(await isChannelMember(rec.id, ch))) missing.push(ch);
-      }
-      if (missing.length) return json({ error: 'join_channels', missing });
+      // Outside users (not in the Telegram channels) are allowed too — the
+      // only gate is the hourly check-in.
       if (!checkedInToday(rec.lastCheckIn)) return json({ error: 'checkin_required' }, 403);
+
       if (!rec.scratchCards.length) return json({ error: 'no_cards' }, 400);
 
       const { cardId } = await readBody(request);

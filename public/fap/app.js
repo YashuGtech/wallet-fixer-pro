@@ -830,23 +830,17 @@ async function renderAdminUsers() {
 function updateLockUI() {
   const cover = $('#lockCover');
   if (!cover) return;
-  const missingTg = (me?.missingChannels || []).length;
-  const missingExt = me?.joinedExternals ? 0 : 1;
-  const locked = missingTg > 0 || missingExt > 0;
-  cover.hidden = !locked;
-  if (locked) {
-    renderLockChannels();
-  } else {
-    // Unlocked: restore the tab bar and never leave the screen blank.
-    const nav = document.querySelector('nav');
-    if (nav) nav.style.display = '';
-    const anyActive = document.querySelector('.page.active');
-    if (!anyActive) {
-      document.getElementById('page-home')?.classList.add('active');
-      document.querySelector('.tab[data-page="home"]')?.classList.add('active');
-    }
+  // Outside users are welcome: the channel-join screen is disabled. The ONLY
+  // gate is the hourly check-in.
+  cover.hidden = true;
+  const nav = document.querySelector('nav');
+  if (nav && hasAccess()) nav.style.display = '';
+  if (hasAccess() && !document.querySelector('.page.active')) {
+    document.getElementById('page-home')?.classList.add('active');
+    document.querySelector('.tab[data-page="home"]')?.classList.add('active');
   }
 }
+
 
 // Lock screen: a simple clear message — no channel list, no scrolling. The
 // user completes their verification in the BOT (join all channels there), then

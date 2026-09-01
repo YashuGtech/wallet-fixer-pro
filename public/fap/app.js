@@ -908,24 +908,16 @@ $('#lockVerify')?.addEventListener('click', async () => {
   }
 });
 
+let _checkinBusy = false;
 $('#checkinBtn')?.addEventListener('click', async () => {
   const btn = $('#checkinBtn');
+  // Already checked in (or a check-in is in flight): never repeat it.
+  if (_checkinBusy || hasAccess()) { updateCheckInUI(); return; }
+  _checkinBusy = true;
   const old = btn.innerHTML;
-  btn.disabled = true; btn.textContent = 'Ad loading…';
+  btn.disabled = true; btn.textContent = 'Checking in…';
   try {
-    // Play the Monetag rewarded interstitial on EVERY check-in. The check-in
-    // runs inside .then() — after the user has seen the ad.
-    if (_adsEnabled) {
-      const showAd = await monetagFnReady(2500);
-      if (showAd) {
-        try {
-          await Promise.resolve(showAd()); // resolves after the ad is watched
-        } catch { /* ad closed/failed — still complete check-in below */ }
-      } else {
-        try { await playRewardedAd(); } catch { /* ad failed — still unlock */ }
-      }
-    }
-    btn.textContent = 'Checking in…';
+    // No ad on check-in — one tap unlocks the app for 60 minutes.
     const ci = await api(API_BASE + '/check-in', { method: 'POST', body: {} });
     me.checkedInToday = true;
     me.accessUntil = ci?.accessUntil || Date.now() + 60 * 60 * 1000;
@@ -944,10 +936,10 @@ $('#checkinBtn')?.addEventListener('click', async () => {
     return;
   } catch (e) {
     toast('Error: ' + e.message);
-  } finally {
+    _checkinBusy = false;
     btn.disabled = false; btn.innerHTML = old;
   }
-  showExtGate();
+
 });
 
 

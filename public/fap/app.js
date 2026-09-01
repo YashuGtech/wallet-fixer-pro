@@ -1010,12 +1010,11 @@ async function refreshAll() {
   preloadMonetag();
   updateAdminUI();
   updateLockUI();
-  if (!me.joinedAll || !me.joinedExternals) return;
-  // Daily check-in gate: block the whole app until checked in today.
+  // Only gate: the hourly check-in (works for outside users too).
   updateCheckInUI();
   startAccessTimer();
   if (!hasAccess()) return;
-  showExtGate();
+
   await loadTransactions();
   renderHome();
   renderRefer();

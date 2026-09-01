@@ -830,23 +830,17 @@ async function renderAdminUsers() {
 function updateLockUI() {
   const cover = $('#lockCover');
   if (!cover) return;
-  const missingTg = (me?.missingChannels || []).length;
-  const missingExt = me?.joinedExternals ? 0 : 1;
-  const locked = missingTg > 0 || missingExt > 0;
-  cover.hidden = !locked;
-  if (locked) {
-    renderLockChannels();
-  } else {
-    // Unlocked: restore the tab bar and never leave the screen blank.
-    const nav = document.querySelector('nav');
-    if (nav) nav.style.display = '';
-    const anyActive = document.querySelector('.page.active');
-    if (!anyActive) {
-      document.getElementById('page-home')?.classList.add('active');
-      document.querySelector('.tab[data-page="home"]')?.classList.add('active');
-    }
+  // Outside users are welcome: the channel-join screen is disabled. The ONLY
+  // gate is the hourly check-in.
+  cover.hidden = true;
+  const nav = document.querySelector('nav');
+  if (nav && hasAccess()) nav.style.display = '';
+  if (hasAccess() && !document.querySelector('.page.active')) {
+    document.getElementById('page-home')?.classList.add('active');
+    document.querySelector('.tab[data-page="home"]')?.classList.add('active');
   }
 }
+
 
 // Lock screen: a simple clear message — no channel list, no scrolling. The
 // user completes their verification in the BOT (join all channels there), then
@@ -914,24 +908,16 @@ $('#lockVerify')?.addEventListener('click', async () => {
   }
 });
 
+let _checkinBusy = false;
 $('#checkinBtn')?.addEventListener('click', async () => {
   const btn = $('#checkinBtn');
+  // Already checked in (or a check-in is in flight): never repeat it.
+  if (_checkinBusy || hasAccess()) { updateCheckInUI(); return; }
+  _checkinBusy = true;
   const old = btn.innerHTML;
-  btn.disabled = true; btn.textContent = 'Ad loading…';
+  btn.disabled = true; btn.textContent = 'Checking in…';
   try {
-    // Play the Monetag rewarded interstitial on EVERY check-in. The check-in
-    // runs inside .then() — after the user has seen the ad.
-    if (_adsEnabled) {
-      const showAd = await monetagFnReady(2500);
-      if (showAd) {
-        try {
-          await Promise.resolve(showAd()); // resolves after the ad is watched
-        } catch { /* ad closed/failed — still complete check-in below */ }
-      } else {
-        try { await playRewardedAd(); } catch { /* ad failed — still unlock */ }
-      }
-    }
-    btn.textContent = 'Checking in…';
+    // No ad on check-in — one tap unlocks the app for 60 minutes.
     const ci = await api(API_BASE + '/check-in', { method: 'POST', body: {} });
     me.checkedInToday = true;
     me.accessUntil = ci?.accessUntil || Date.now() + 60 * 60 * 1000;
@@ -950,10 +936,10 @@ $('#checkinBtn')?.addEventListener('click', async () => {
     return;
   } catch (e) {
     toast('Error: ' + e.message);
-  } finally {
+    _checkinBusy = false;
     btn.disabled = false; btn.innerHTML = old;
   }
-  showExtGate();
+
 });
 
 
@@ -1016,12 +1002,11 @@ async function refreshAll() {
   preloadMonetag();
   updateAdminUI();
   updateLockUI();
-  if (!me.joinedAll || !me.joinedExternals) return;
-  // Daily check-in gate: block the whole app until checked in today.
+  // Only gate: the hourly check-in (works for outside users too).
   updateCheckInUI();
   startAccessTimer();
   if (!hasAccess()) return;
-  showExtGate();
+
   await loadTransactions();
   renderHome();
   renderRefer();

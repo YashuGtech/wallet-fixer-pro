@@ -915,10 +915,20 @@ $('#checkinBtn')?.addEventListener('click', async () => {
   if (_checkinBusy || hasAccess()) { updateCheckInUI(); return; }
   _checkinBusy = true;
   const old = btn.innerHTML;
-  btn.disabled = true; btn.textContent = 'Checking in…';
+  btn.disabled = true; btn.textContent = 'Ad loading…';
   try {
-    // No ad on check-in — one tap unlocks the app for 60 minutes.
+    // Ad stays on check-in only. Once unlocked, scratching is ad-free.
+    if (_adsEnabled) {
+      const showAd = await monetagFnReady(2500);
+      if (showAd) {
+        try { await Promise.resolve(showAd()); } catch { /* ad closed — still check in */ }
+      } else {
+        try { await playRewardedAd(); } catch { /* ad failed — still unlock */ }
+      }
+    }
+    btn.textContent = 'Checking in…';
     const ci = await api(API_BASE + '/check-in', { method: 'POST', body: {} });
+
     me.checkedInToday = true;
     me.accessUntil = ci?.accessUntil || Date.now() + 60 * 60 * 1000;
     startAccessTimer();

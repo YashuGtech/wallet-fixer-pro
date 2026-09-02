@@ -933,7 +933,8 @@ $('#lockVerify')?.addEventListener('click', async () => {
     if (!me?.joinedExternals && (me?.missingChannels || []).length === 0) {
       try { await api(API_BASE + '/join-external', { method: 'POST', body: {} }); } catch {}
     }
-    me = await api(API_BASE + '/me');
+    // fresh=1 forces a live (parallel, ~1s) membership re-check, bypassing cache.
+    me = await api(API_BASE + '/me?fresh=1');
     updateLockUI();
     if (me.joinedAll && me.joinedExternals) {
       toast('All channels verified!');

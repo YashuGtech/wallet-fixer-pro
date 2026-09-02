@@ -4,7 +4,9 @@
 //   /api/public/fap/me, /scratch, /redeem, /admin/*, ...
 import { createFileRoute } from '@tanstack/react-router';
 import { getConfig } from '@/lib/fap/config';
-import { validateInitData, isChannelMember, sendMessage } from '@/lib/fap/telegram.server';
+import {
+  validateInitData, sendMessage, missingChannelsFor, answerCallback,
+} from '@/lib/fap/telegram.server';
 import {
   getUser, getOrCreateUser, updateUser, allUsers, addTransaction, updateTransaction,
   transactionsFor, allTransactions, ensureRefCode, findByRefCode, type FapUser,
@@ -100,6 +102,36 @@ function checkedInToday(t: number | null) {
   return accessUntil(t) > Date.now();
 }
 
+/**
+ * Grant the inviter their single referral scratch card once the invited user
+ * has joined every channel. One card per referral, once per device/IP.
+ * Used by both /me (mini app) and the bot's "I've joined" verification.
+ */
+async function grantReferral(rec: FapUser, ip: string) {
+  if (!rec.referrer || String(rec.referrer) === String(rec.id) || rec.credited) return false;
+  const users = await allUsers();
+  if (ip) {
+    const dupe = users.some((u) => u.ip && u.ip === ip && String(u.id) !== String(rec.id));
+    if (dupe) return false;
+  }
+  const ref = await getUser(rec.referrer);
+  if (!ref) return false;
+  const newCards = [
+    ...ref.scratchCards,
+    { id: Date.now() + Math.random().toString(16).slice(2, 8), kind: 'referral', at: Date.now() },
+  ];
+  await updateUser(rec.referrer, { qualifiedCount: ref.qualifiedCount + 1, scratchCards: newCards });
+  await updateUser(rec.id, { credited: true, ...(ip ? { ip } : {}) });
+  await sendMessage(
+    rec.referrer,
+    `🎉 <b>You got a referral!</b>\n<b>Your free Scratch Card is ready!</b>\n\n` +
+      `👤 <i>${rec.firstName || 'Someone'} joined all channels on a new device</i>\n\n` +
+      `Open the Rewards Mini App to scratch it. 🎟️`,
+  );
+  return true;
+}
+
+
 async function adminAuthed(request: Request, url: URL) {
   const cfg = getConfig();
   const key = request.headers.get('x-admin-key') || url.searchParams.get('key') || '';
@@ -127,6 +159,80 @@ async function handle(request: Request, params: any): Promise<Response> {
   if (method === 'OPTIONS') return json({ ok: true });
 
   try {
+    // ---- POST /bot  (Telegram webhook) -------------------------------------
+    // New users arrive from a referral link -> the BOT first asks them to join
+    // every channel. When they tap "I've joined", membership is verified live
+    // (in parallel, ~1s) and the inviter gets their referral scratch card.
+    if (path === '/bot' && method === 'POST') {
+      const update = await readBody(request);
+      const msg = update.message || update.edited_message;
+      const cq = update.callback_query;
+
+      const joinKeyboard = (missing: string[]) => ({
+        inline_keyboard: [
+          ...missing.map((ch) => [{ text: `📢 Join ${ch}`, url: `https://t.me/${ch.replace('@', '')}` }]),
+          [{ text: "✅ I've joined — Verify", callback_data: 'verify' }],
+        ],
+      });
+      const appKeyboard = () => ({
+        inline_keyboard: [[
+          { text: '🎁 Open Rewards App', url: `https://t.me/${cfg.botUsername}/${cfg.appShortName}` },
+        ]],
+      });
+
+      // /start [ref_CODE]
+      if (msg?.text && String(msg.text).startsWith('/start')) {
+        const from = msg.from || {};
+        const rec = await getOrCreateUser(from.id, { firstName: from.first_name, username: from.username });
+        const arg = String(msg.text).split(/\s+/)[1] || '';
+        const code = arg.replace(/^ref_/i, '').trim();
+        if (rec && code && !rec.referrer) {
+          const ref = await findByRefCode(code);
+          if (ref && String(ref.id) !== String(rec.id)) {
+            await updateUser(rec.id, { referrer: String(ref.id) });
+            await updateUser(ref.id, { referralCount: ref.referralCount + 1 });
+          }
+        }
+        const missing = rec ? await missingChannelsFor(rec.id, cfg.channels) : cfg.channels;
+        if (missing.length) {
+          await sendMessage(
+            from.id,
+            `👋 <b>Welcome to FAP Rewards!</b>\n\nJoin all our channels below, then tap <b>I've joined — Verify</b> to unlock the app.`,
+            { reply_markup: joinKeyboard(missing) },
+          );
+        } else {
+          if (rec) await grantReferral(rec, '');
+          await sendMessage(from.id, `✅ <b>All channels verified!</b>\n\nOpen the app and start scratching. 🎟️`, {
+            reply_markup: appKeyboard(),
+          });
+        }
+        return json({ ok: true });
+      }
+
+      // "I've joined — Verify"
+      if (cq?.data === 'verify') {
+        const from = cq.from || {};
+        const rec = await getOrCreateUser(from.id, { firstName: from.first_name, username: from.username });
+        const missing = rec ? await missingChannelsFor(rec.id, cfg.channels) : cfg.channels;
+        await updateUser(from.id, { lastChannelCheck: Date.now(), channelCheckCache: missing });
+        if (missing.length) {
+          await answerCallback(cq.id, `Still missing: ${missing.join(', ')}`, true);
+          await sendMessage(from.id, `❌ You have not joined: <b>${missing.join(', ')}</b>`, {
+            reply_markup: joinKeyboard(missing),
+          });
+        } else {
+          await answerCallback(cq.id, 'Verified ✅');
+          if (rec) await grantReferral(rec, '');
+          await sendMessage(from.id, `✅ <b>Verified!</b>\n\nOpen the app and start scratching. 🎟️`, {
+            reply_markup: appKeyboard(),
+          });
+        }
+        return json({ ok: true });
+      }
+
+      return json({ ok: true, ignored: true });
+    }
+
     // ---- GET /me -----------------------------------------------------------
     if (path === '/me' && method === 'GET') {
       const user = await authed(request);
@@ -145,42 +251,21 @@ async function handle(request: Request, params: any): Promise<Response> {
         joinedAll = true;
         joinedExternals = true;
       } else {
-        // Live Telegram membership checks are rate-limited and slow, so /me
-        // (polled on every app open/refresh) only re-checks once an hour.
-        // The result is cached on the user row and reused as a reminder in
-        // between checks; the actual reward gate in /scratch always does a
-        // fresh live check, so this cache can't be used to fake a claim.
-        const CHANNEL_CHECK_TTL_MS = 60 * 60 * 1000; // 1 hour
+        // All channels are checked in PARALLEL (~1s total) with a short cache
+        // so a user who LEAVES a channel is detected within a couple minutes.
+        const CHANNEL_CHECK_TTL_MS = 2 * 60 * 1000;
         const cacheAge = rec.lastChannelCheck ? Date.now() - rec.lastChannelCheck : Infinity;
-        if (cacheAge < CHANNEL_CHECK_TTL_MS) {
+        if (cacheAge < CHANNEL_CHECK_TTL_MS && !url.searchParams.get('fresh')) {
           missing = rec.channelCheckCache || [];
         } else {
-          for (const ch of cfg.channels) {
-            if (!(await isChannelMember(rec.id, ch))) missing.push(ch);
-          }
+          missing = await missingChannelsFor(rec.id, cfg.channels);
           await updateUser(rec.id, { lastChannelCheck: Date.now(), channelCheckCache: missing });
         }
         joinedAll = missing.length === 0;
       }
 
-      if (rec.referrer && String(rec.referrer) !== String(rec.id) && !rec.credited && joinedAll && joinedExternals) {
-        const ip = clientIp(request);
-        const users = await allUsers();
-        const alreadyClaimed = users.some((u) => u.ip && u.ip === ip && String(u.id) !== String(rec.id));
-        if (ip && !alreadyClaimed) {
-          const ref = await getUser(rec.referrer);
-          if (ref) {
-            const newCards = [...ref.scratchCards, { id: Date.now() + Math.random().toString(16).slice(2, 8), kind: 'referral', at: Date.now() }];
-            await updateUser(rec.referrer, { qualifiedCount: ref.qualifiedCount + 1, scratchCards: newCards });
-            await updateUser(rec.id, { credited: true, creditedAt: Date.now() });
-            await sendMessage(
-              rec.referrer,
-              `🎉 <b>You got a referral!</b>\n<b>Your free Scratch Card is ready!</b>\n\n` +
-                `👤 <i>${rec.firstName || 'Someone'} joined all channels & opened the Mini App on a new device</i>\n\n` +
-                `Open the Rewards Mini App to scratch it. 🎟️`,
-            );
-          }
-        }
+      if (joinedAll && joinedExternals) {
+        await grantReferral(rec, clientIp(request));
       }
 
       const cap = rec.qualifiedCount;

@@ -383,34 +383,59 @@ function buildScratchTile(card, grid) {
     painted = true;
   }
 
+  // Smooth scratching: erase along the pointer path with a thick round stroke
+  // (instead of isolated dots) and sample coverage only every few strokes, so
+  // the gesture stays buttery even on low-end phones.
+  let lastPt = null;
+  let sampleTick = 0;
+
   function scratchAt(clientX, clientY) {
     if (revealed || !painted) return;
     const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
     ctx.save();
     ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 46;
     ctx.beginPath();
-    ctx.arc(clientX - rect.left, clientY - rect.top, 22, 0, Math.PI * 2);
+    if (lastPt) {
+      ctx.moveTo(lastPt.x, lastPt.y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(x, y, 23, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
+    lastPt = { x, y };
 
+    if (++sampleTick % 4 !== 0) return;
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     let cleared = 0;
     let checked = 0;
-    for (let i = 3; i < data.length; i += 40) {
+    for (let i = 3; i < data.length; i += 160) {
       checked++;
       if (data[i] === 0) cleared++;
     }
-    if (checked && cleared / checked > 0.45 && !notified) {
+    if (checked && cleared / checked > 0.32 && !notified) {
       notified = true;
       reveal();
     }
   }
 
+
   function reveal() {
     revealed = true;
     canvas.style.pointerEvents = 'none';
+    // Fade the remaining foil away instead of snapping it off.
+    canvas.style.transition = 'opacity .28s ease, transform .28s ease';
+    canvas.style.opacity = '0';
+    canvas.style.transform = 'scale(1.04)';
     canvas.classList.add('revealed');
     prize.style.display = 'flex';
     prize.style.animation = 'pop 0.45s var(--ease-clay) both';
@@ -426,15 +451,20 @@ function buildScratchTile(card, grid) {
       return;
     }
     drawing = true;
+    lastPt = null;
     canvas.setPointerCapture(e.pointerId);
     scratchAt(e.clientX, e.clientY);
   });
   canvas.addEventListener('pointermove', (e) => {
-    if (!card.unlocked) return;
-    if (drawing) scratchAt(e.clientX, e.clientY);
+    if (!card.unlocked || !drawing) return;
+    e.preventDefault();
+    // Use coalesced points so fast swipes erase a continuous path.
+    const pts = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+    if (pts.length) for (const p of pts) scratchAt(p.clientX, p.clientY);
+    else scratchAt(e.clientX, e.clientY);
   });
-  canvas.addEventListener('pointerup', () => (drawing = false));
-  canvas.addEventListener('pointercancel', () => (drawing = false));
+  canvas.addEventListener('pointerup', () => { drawing = false; lastPt = null; });
+  canvas.addEventListener('pointercancel', () => { drawing = false; lastPt = null; });
 
   // Paint once the tile is in the layout.
   requestAnimationFrame(() => {
@@ -855,12 +885,27 @@ function renderLockChannels() {
     return;
   }
 
-  $('#lockMissing').textContent =
-    'Verifying that you have joined all our channels…\n\nIf you have not joined yet, please go to the bot and complete the channel join verification, then open the app again.';
+  const missing = me?.missingChannels || [];
+  $('#lockMissing').textContent = missing.length
+    ? `Join ${missing.length} channel(s) left, then tap Verify:`
+    : 'Almost there — tap Verify to unlock.';
 
-  // "Open Bot" button — opens the bot with the /start command so the user
-  // instantly gets the join buttons. After joining, they come back and the
-  // lock re-verifies (auto-unlock on the next load / after tapping Verify).
+  // Show exactly which channels are left (or were left/unfollowed) so the user
+  // can tap and join each one right here.
+  for (const ch of missing) {
+    const a = document.createElement('button');
+    a.className = 'ext-link-btn';
+    a.innerHTML = '<svg viewBox="0 0 24 24" fill="#229ED9"><path d="M11.94 2A10 10 0 1 0 21.9 12 10 10 0 0 0 11.94 2zm4.83 7.05-1.7 8.02c-.13.57-.46.71-.93.44l-2.57-1.9-1.24 1.2a.65.65 0 0 1-.52.25l.18-2.62 4.77-4.31c.2-.18-.05-.28-.32-.1l-5.9 3.71-2.54-.8c-.55-.17-.56-.55.12-.82l9.94-3.83c.46-.17.86.11.71.76z"/></svg>' +
+      `<span>Join ${ch}</span>`;
+    a.addEventListener('click', () => {
+      const url = 'https://t.me/' + String(ch).replace('@', '');
+      if (tg?.openTelegramLink) tg.openTelegramLink(url);
+      else window.open(url, '_blank', 'noopener');
+    });
+    box.appendChild(a);
+  }
+
+  // Fallback: open the bot, which walks through the same join + verify flow.
   const b = document.createElement('button');
   b.className = 'ext-link-btn';
   b.innerHTML = '<svg viewBox="0 0 24 24" fill="#229ED9"><path d="M11.94 2A10 10 0 1 0 21.9 12 10 10 0 0 0 11.94 2zm4.83 7.05-1.7 8.02c-.13.57-.46.71-.93.44l-2.57-1.9-1.24 1.2a.65.65 0 0 1-.52.25l.18-2.62 4.77-4.31c.2-.18-.05-.28-.32-.1l-5.9 3.71-2.54-.8c-.55-.17-.56-.55.12-.82l9.94-3.83c.46-.17.86.11.71.76z"/></svg>' +
@@ -888,7 +933,8 @@ $('#lockVerify')?.addEventListener('click', async () => {
     if (!me?.joinedExternals && (me?.missingChannels || []).length === 0) {
       try { await api(API_BASE + '/join-external', { method: 'POST', body: {} }); } catch {}
     }
-    me = await api(API_BASE + '/me');
+    // fresh=1 forces a live (parallel, ~1s) membership re-check, bypassing cache.
+    me = await api(API_BASE + '/me?fresh=1');
     updateLockUI();
     if (me.joinedAll && me.joinedExternals) {
       toast('All channels verified!');

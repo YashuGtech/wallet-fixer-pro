@@ -72,6 +72,42 @@ export async function isChannelMember(tgId: string | number, channel: string) {
   return !!(p.ok && ['member', 'administrator', 'creator'].includes(p.result?.status));
 }
 
-export async function sendMessage(chatId: string | number, text: string) {
-  return tgCall('sendMessage', { chat_id: String(chatId), text, parse_mode: 'HTML' });
+/**
+ * Check every channel in PARALLEL with a hard timeout, so verification always
+ * completes in ~1s instead of N sequential Telegram round-trips.
+ * Returns the list of channels the user has NOT joined (or has left).
+ */
+export async function missingChannelsFor(
+  tgId: string | number,
+  channels: string[],
+  timeoutMs = 1500,
+): Promise<string[]> {
+  const results = await Promise.all(
+    channels.map(async (ch) => {
+      try {
+        const ok = await Promise.race([
+          isChannelMember(tgId, ch),
+          new Promise<boolean>((res) => setTimeout(() => res(true), timeoutMs)),
+        ]);
+        return ok ? null : ch;
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return results.filter(Boolean) as string[];
+}
+
+export async function sendMessage(chatId: string | number, text: string, extra: any = {}) {
+  return tgCall('sendMessage', {
+    chat_id: String(chatId),
+    text,
+    parse_mode: 'HTML',
+    disable_web_page_preview: true,
+    ...extra,
+  });
+}
+
+export async function answerCallback(id: string, text = '', alert = false) {
+  return tgCall('answerCallbackQuery', { callback_query_id: id, text, show_alert: alert });
 }

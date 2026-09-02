@@ -5,7 +5,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { getConfig } from '@/lib/fap/config';
 import {
-  validateInitData, isChannelMember, sendMessage, missingChannelsFor, answerCallback,
+  validateInitData, sendMessage, missingChannelsFor, answerCallback,
 } from '@/lib/fap/telegram.server';
 import {
   getUser, getOrCreateUser, updateUser, allUsers, addTransaction, updateTransaction,

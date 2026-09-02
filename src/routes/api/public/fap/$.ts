@@ -102,6 +102,36 @@ function checkedInToday(t: number | null) {
   return accessUntil(t) > Date.now();
 }
 
+/**
+ * Grant the inviter their single referral scratch card once the invited user
+ * has joined every channel. One card per referral, once per device/IP.
+ * Used by both /me (mini app) and the bot's "I've joined" verification.
+ */
+async function grantReferral(rec: FapUser, ip: string) {
+  if (!rec.referrer || String(rec.referrer) === String(rec.id) || rec.credited) return false;
+  const users = await allUsers();
+  if (ip) {
+    const dupe = users.some((u) => u.ip && u.ip === ip && String(u.id) !== String(rec.id));
+    if (dupe) return false;
+  }
+  const ref = await getUser(rec.referrer);
+  if (!ref) return false;
+  const newCards = [
+    ...ref.scratchCards,
+    { id: Date.now() + Math.random().toString(16).slice(2, 8), kind: 'referral', at: Date.now() },
+  ];
+  await updateUser(rec.referrer, { qualifiedCount: ref.qualifiedCount + 1, scratchCards: newCards });
+  await updateUser(rec.id, { credited: true, ...(ip ? { ip } : {}) });
+  await sendMessage(
+    rec.referrer,
+    `🎉 <b>You got a referral!</b>\n<b>Your free Scratch Card is ready!</b>\n\n` +
+      `👤 <i>${rec.firstName || 'Someone'} joined all channels on a new device</i>\n\n` +
+      `Open the Rewards Mini App to scratch it. 🎟️`,
+  );
+  return true;
+}
+
+
 async function adminAuthed(request: Request, url: URL) {
   const cfg = getConfig();
   const key = request.headers.get('x-admin-key') || url.searchParams.get('key') || '';

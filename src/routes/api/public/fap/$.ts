@@ -255,7 +255,7 @@ async function handle(request: Request, params: any): Promise<Response> {
         // so a user who LEAVES a channel is detected within a couple minutes.
         const CHANNEL_CHECK_TTL_MS = 2 * 60 * 1000;
         const cacheAge = rec.lastChannelCheck ? Date.now() - rec.lastChannelCheck : Infinity;
-        if (cacheAge < CHANNEL_CHECK_TTL_MS) {
+        if (cacheAge < CHANNEL_CHECK_TTL_MS && !url.searchParams.get('fresh')) {
           missing = rec.channelCheckCache || [];
         } else {
           missing = await missingChannelsFor(rec.id, cfg.channels);

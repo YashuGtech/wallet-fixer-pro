@@ -432,6 +432,10 @@ function buildScratchTile(card, grid) {
   function reveal() {
     revealed = true;
     canvas.style.pointerEvents = 'none';
+    // Fade the remaining foil away instead of snapping it off.
+    canvas.style.transition = 'opacity .28s ease, transform .28s ease';
+    canvas.style.opacity = '0';
+    canvas.style.transform = 'scale(1.04)';
     canvas.classList.add('revealed');
     prize.style.display = 'flex';
     prize.style.animation = 'pop 0.45s var(--ease-clay) both';
@@ -447,15 +451,20 @@ function buildScratchTile(card, grid) {
       return;
     }
     drawing = true;
+    lastPt = null;
     canvas.setPointerCapture(e.pointerId);
     scratchAt(e.clientX, e.clientY);
   });
   canvas.addEventListener('pointermove', (e) => {
-    if (!card.unlocked) return;
-    if (drawing) scratchAt(e.clientX, e.clientY);
+    if (!card.unlocked || !drawing) return;
+    e.preventDefault();
+    // Use coalesced points so fast swipes erase a continuous path.
+    const pts = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+    if (pts.length) for (const p of pts) scratchAt(p.clientX, p.clientY);
+    else scratchAt(e.clientX, e.clientY);
   });
-  canvas.addEventListener('pointerup', () => (drawing = false));
-  canvas.addEventListener('pointercancel', () => (drawing = false));
+  canvas.addEventListener('pointerup', () => { drawing = false; lastPt = null; });
+  canvas.addEventListener('pointercancel', () => { drawing = false; lastPt = null; });
 
   // Paint once the tile is in the layout.
   requestAnimationFrame(() => {

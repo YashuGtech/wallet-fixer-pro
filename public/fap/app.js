@@ -383,30 +383,51 @@ function buildScratchTile(card, grid) {
     painted = true;
   }
 
+  // Smooth scratching: erase along the pointer path with a thick round stroke
+  // (instead of isolated dots) and sample coverage only every few strokes, so
+  // the gesture stays buttery even on low-end phones.
+  let lastPt = null;
+  let sampleTick = 0;
+
   function scratchAt(clientX, clientY) {
     if (revealed || !painted) return;
     const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
     ctx.save();
     ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 46;
     ctx.beginPath();
-    ctx.arc(clientX - rect.left, clientY - rect.top, 22, 0, Math.PI * 2);
+    if (lastPt) {
+      ctx.moveTo(lastPt.x, lastPt.y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(x, y, 23, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
+    lastPt = { x, y };
 
+    if (++sampleTick % 4 !== 0) return;
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     let cleared = 0;
     let checked = 0;
-    for (let i = 3; i < data.length; i += 40) {
+    for (let i = 3; i < data.length; i += 160) {
       checked++;
       if (data[i] === 0) cleared++;
     }
-    if (checked && cleared / checked > 0.45 && !notified) {
+    if (checked && cleared / checked > 0.32 && !notified) {
       notified = true;
       reveal();
     }
   }
+
 
   function reveal() {
     revealed = true;

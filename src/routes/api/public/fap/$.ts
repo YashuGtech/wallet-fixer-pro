@@ -4,7 +4,9 @@
 //   /api/public/fap/me, /scratch, /redeem, /admin/*, ...
 import { createFileRoute } from '@tanstack/react-router';
 import { getConfig } from '@/lib/fap/config';
-import { validateInitData, isChannelMember, sendMessage } from '@/lib/fap/telegram.server';
+import {
+  validateInitData, isChannelMember, sendMessage, missingChannelsFor, answerCallback,
+} from '@/lib/fap/telegram.server';
 import {
   getUser, getOrCreateUser, updateUser, allUsers, addTransaction, updateTransaction,
   transactionsFor, allTransactions, ensureRefCode, findByRefCode, type FapUser,

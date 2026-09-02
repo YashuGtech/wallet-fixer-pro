@@ -159,6 +159,80 @@ async function handle(request: Request, params: any): Promise<Response> {
   if (method === 'OPTIONS') return json({ ok: true });
 
   try {
+    // ---- POST /bot  (Telegram webhook) -------------------------------------
+    // New users arrive from a referral link -> the BOT first asks them to join
+    // every channel. When they tap "I've joined", membership is verified live
+    // (in parallel, ~1s) and the inviter gets their referral scratch card.
+    if (path === '/bot' && method === 'POST') {
+      const update = await readBody(request);
+      const msg = update.message || update.edited_message;
+      const cq = update.callback_query;
+
+      const joinKeyboard = (missing: string[]) => ({
+        inline_keyboard: [
+          ...missing.map((ch) => [{ text: `📢 Join ${ch}`, url: `https://t.me/${ch.replace('@', '')}` }]),
+          [{ text: "✅ I've joined — Verify", callback_data: 'verify' }],
+        ],
+      });
+      const appKeyboard = () => ({
+        inline_keyboard: [[
+          { text: '🎁 Open Rewards App', url: `https://t.me/${cfg.botUsername}/${cfg.appShortName}` },
+        ]],
+      });
+
+      // /start [ref_CODE]
+      if (msg?.text && String(msg.text).startsWith('/start')) {
+        const from = msg.from || {};
+        const rec = await getOrCreateUser(from.id, { firstName: from.first_name, username: from.username });
+        const arg = String(msg.text).split(/\s+/)[1] || '';
+        const code = arg.replace(/^ref_/i, '').trim();
+        if (rec && code && !rec.referrer) {
+          const ref = await findByRefCode(code);
+          if (ref && String(ref.id) !== String(rec.id)) {
+            await updateUser(rec.id, { referrer: String(ref.id) });
+            await updateUser(ref.id, { referralCount: ref.referralCount + 1 });
+          }
+        }
+        const missing = rec ? await missingChannelsFor(rec.id, cfg.channels) : cfg.channels;
+        if (missing.length) {
+          await sendMessage(
+            from.id,
+            `👋 <b>Welcome to FAP Rewards!</b>\n\nJoin all our channels below, then tap <b>I've joined — Verify</b> to unlock the app.`,
+            { reply_markup: joinKeyboard(missing) },
+          );
+        } else {
+          if (rec) await grantReferral(rec, '');
+          await sendMessage(from.id, `✅ <b>All channels verified!</b>\n\nOpen the app and start scratching. 🎟️`, {
+            reply_markup: appKeyboard(),
+          });
+        }
+        return json({ ok: true });
+      }
+
+      // "I've joined — Verify"
+      if (cq?.data === 'verify') {
+        const from = cq.from || {};
+        const rec = await getOrCreateUser(from.id, { firstName: from.first_name, username: from.username });
+        const missing = rec ? await missingChannelsFor(rec.id, cfg.channels) : cfg.channels;
+        await updateUser(from.id, { lastChannelCheck: Date.now(), channelCheckCache: missing });
+        if (missing.length) {
+          await answerCallback(cq.id, `Still missing: ${missing.join(', ')}`, true);
+          await sendMessage(from.id, `❌ You have not joined: <b>${missing.join(', ')}</b>`, {
+            reply_markup: joinKeyboard(missing),
+          });
+        } else {
+          await answerCallback(cq.id, 'Verified ✅');
+          if (rec) await grantReferral(rec, '');
+          await sendMessage(from.id, `✅ <b>Verified!</b>\n\nOpen the app and start scratching. 🎟️`, {
+            reply_markup: appKeyboard(),
+          });
+        }
+        return json({ ok: true });
+      }
+
+      return json({ ok: true, ignored: true });
+    }
+
     // ---- GET /me -----------------------------------------------------------
     if (path === '/me' && method === 'GET') {
       const user = await authed(request);

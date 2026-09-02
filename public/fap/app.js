@@ -885,12 +885,27 @@ function renderLockChannels() {
     return;
   }
 
-  $('#lockMissing').textContent =
-    'Verifying that you have joined all our channels…\n\nIf you have not joined yet, please go to the bot and complete the channel join verification, then open the app again.';
+  const missing = me?.missingChannels || [];
+  $('#lockMissing').textContent = missing.length
+    ? `Join ${missing.length} channel(s) left, then tap Verify:`
+    : 'Almost there — tap Verify to unlock.';
 
-  // "Open Bot" button — opens the bot with the /start command so the user
-  // instantly gets the join buttons. After joining, they come back and the
-  // lock re-verifies (auto-unlock on the next load / after tapping Verify).
+  // Show exactly which channels are left (or were left/unfollowed) so the user
+  // can tap and join each one right here.
+  for (const ch of missing) {
+    const a = document.createElement('button');
+    a.className = 'ext-link-btn';
+    a.innerHTML = '<svg viewBox="0 0 24 24" fill="#229ED9"><path d="M11.94 2A10 10 0 1 0 21.9 12 10 10 0 0 0 11.94 2zm4.83 7.05-1.7 8.02c-.13.57-.46.71-.93.44l-2.57-1.9-1.24 1.2a.65.65 0 0 1-.52.25l.18-2.62 4.77-4.31c.2-.18-.05-.28-.32-.1l-5.9 3.71-2.54-.8c-.55-.17-.56-.55.12-.82l9.94-3.83c.46-.17.86.11.71.76z"/></svg>' +
+      `<span>Join ${ch}</span>`;
+    a.addEventListener('click', () => {
+      const url = 'https://t.me/' + String(ch).replace('@', '');
+      if (tg?.openTelegramLink) tg.openTelegramLink(url);
+      else window.open(url, '_blank', 'noopener');
+    });
+    box.appendChild(a);
+  }
+
+  // Fallback: open the bot, which walks through the same join + verify flow.
   const b = document.createElement('button');
   b.className = 'ext-link-btn';
   b.innerHTML = '<svg viewBox="0 0 24 24" fill="#229ED9"><path d="M11.94 2A10 10 0 1 0 21.9 12 10 10 0 0 0 11.94 2zm4.83 7.05-1.7 8.02c-.13.57-.46.71-.93.44l-2.57-1.9-1.24 1.2a.65.65 0 0 1-.52.25l.18-2.62 4.77-4.31c.2-.18-.05-.28-.32-.1l-5.9 3.71-2.54-.8c-.55-.17-.56-.55.12-.82l9.94-3.83c.46-.17.86.11.71.76z"/></svg>' +
